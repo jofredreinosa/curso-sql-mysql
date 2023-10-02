@@ -1,0 +1,659 @@
+/* Por medio de este script se crearan tablas y datos de ejemplo con fines pedagógicos
+de una base de datos de un banco x. Para ejecutar o importar este script, debe haber
+creado previamente la base de datos banco ya sea con el comando create database banco;
+o a través de la interfaz gráfica de su manejador de base de datos. Una vez creada la 
+base de datos, ya puede proceder a ejecutar estas instrucciones SQL o a importar este
+archivo desde la interfaz correspondiente si el manejador de base de datos lo permite.
+En el caso de PHPmyAdmin, para crear la base de datos puede ir a la ficha base de datos del menú,
+introducir el nombre banco en el cuadro de texto identificado como Crear nueva base de datos
+y hacer clic en el botón crear ó ir a la ficha SQL del menú y tipear el comando create database banco;
+y luego hacer clic en el botón continuar.
+Para la creación de tablas y llenado de datos puede ir a la ficha importar del menú, hacer clic en el boton
+examinar, seleccionar este archivo texto (script_data.txt) y luego hacer clic en continuar, otra forma
+es ir a la ficha SQL del menú, pegar toda la información de este archivo en el cuadro de edicion destinado
+para ejecutar consultas y luego hacer clic en continuar.
+Una vez hecho esto, ya tiene su base de datos lista y cargada para comenzar a trabajar con las Actividades
+de aprendizaje del Lenguaje SQL */
+
+
+/* inicio creación de tablas */
+
+create table departamento
+ (dept_id smallint unsigned not null auto_increment,
+  nombre varchar(20) not null,
+  constraint pk_departamento primary key (dept_id)
+ ) ENGINE=InnoDB;
+
+create table sucursal
+ (sucursal_id smallint unsigned not null auto_increment,
+  nombre varchar(20) not null,
+  direccion varchar(30),
+  ciudad varchar(20),
+  estado varchar(2),
+  codpostal varchar(12),
+  constraint pk_sucursal primary key (sucursal_id)
+ ) ENGINE=InnoDB;
+
+create table empleado
+ (emp_id smallint unsigned not null auto_increment,
+  nombre varchar(20) not null,
+  apellido varchar(20) not null,
+  fecha_inicio date not null,
+  fecha_fin date,
+  jefe_emp_id smallint unsigned,
+  dept_id smallint unsigned,
+  titulo varchar(20),
+  asignado_sucursal_id smallint unsigned,
+  constraint fk_e_emp_id 
+    foreign key (jefe_emp_id) references empleado (emp_id),
+  constraint fk_dept_id
+    foreign key (dept_id) references departamento (dept_id),
+  constraint fk_e_sucursal_id
+    foreign key (asignado_sucursal_id) references sucursal (sucursal_id),
+  constraint pk_empleado primary key (emp_id)
+ ) ENGINE=InnoDB;
+
+create table tipo_producto
+ (tipo_producto_cd varchar(10) not null,
+  nombre varchar(50) not null,
+  constraint pk_tipo_producto primary key (tipo_producto_cd)
+ ) ENGINE=InnoDB;
+
+create table producto
+ (producto_cd varchar(10) not null,
+  nombre varchar(50) not null,
+  tipo_producto_cd varchar(10) not null,
+  fecha_inicio date,
+  fecha_retiro date,
+  constraint fk_tipo_producto_cd foreign key (tipo_producto_cd) 
+    references tipo_producto (tipo_producto_cd),
+  constraint pk_producto primary key (producto_cd)
+ ) ENGINE=InnoDB;
+
+create table cliente
+ (cli_id integer unsigned not null auto_increment,
+  region_id varchar(12) not null,
+  tipo_cliente enum('N','J') not null,
+  direccion varchar(30),
+  ciudad varchar(20),
+  estado varchar(20),
+  codigo_postal varchar(10),
+  constraint pk_cliente primary key (cli_id)
+ ) ENGINE=InnoDB;
+
+create table pnatural
+ (cli_id integer unsigned not null,
+  nombre varchar(30) not null,
+  apellido varchar(30) not null,
+  fec_nac date,
+  constraint fk_i_cli_id foreign key (cli_id)
+    references cliente (cli_id),
+  constraint pk_pnatural primary key (cli_id)
+ ) ENGINE=InnoDB;
+
+create table juridica
+ (cli_id integer unsigned not null,
+  nombre varchar(40) not null,
+  estado_id varchar(10) not null,
+  fec_ingreso date,
+  constraint fk_b_cli_id foreign key (cli_id)
+    references cliente (cli_id),
+  constraint pk_juridica primary key (cli_id)
+ ) ENGINE=InnoDB;
+
+create table representante
+ (representante_id smallint unsigned not null auto_increment,
+  cli_id integer unsigned not null,
+  nombre varchar(30) not null,
+  apellido varchar(30) not null,
+  titulo varchar(20),
+  fecha_inicio date not null,
+  fecha_fin date,
+  constraint fk_o_cli_id foreign key (cli_id)
+    references juridica (cli_id),
+  constraint pk_representante primary key (representante_id)
+ ) ENGINE=InnoDB;
+
+create table cuenta
+ (cuenta_id integer unsigned not null auto_increment,
+  producto_cd varchar(10) not null,
+  cli_id integer unsigned not null,
+  fec_apertura date not null,
+  fec_cierre date,
+  fec_ult_tra date,
+  estado enum('ACTIVO','CERRADO','CONGELADO'),
+  cta_sucursal_id smallint unsigned,
+  cta_emp_id smallint unsigned,
+  saldo_disponible float(10,2),
+  saldo_diferido float(10,2),
+  constraint fk_producto_cd foreign key (producto_cd)
+    references producto (producto_cd),
+  constraint fk_a_cli_id foreign key (cli_id)
+    references cliente (cli_id),
+  constraint fk_a_sucursal_id foreign key (cta_sucursal_id)
+    references sucursal (sucursal_id),
+  constraint fk_a_emp_id foreign key (cta_emp_id)
+    references empleado (emp_id),
+  constraint pk_cuenta primary key (cuenta_id)
+ ) ENGINE=InnoDB;
+
+create table transaccion
+ (tra_id integer unsigned not null auto_increment,
+  fec_tra datetime not null,
+  cuenta_id integer unsigned not null,
+  tipo_tra enum('DBT','CDT'),
+  monto double(10,2) not null,
+  hecho_emp_id smallint unsigned,
+  hecho_sucursal_id smallint unsigned,
+  fec_dis_fondo datetime,
+  constraint fk_t_cuenta_id foreign key (cuenta_id)
+    references cuenta (cuenta_id),
+  constraint fk_hecho_emp_id foreign key (hecho_emp_id)
+    references empleado (emp_id),
+  constraint fk_hecho_sucursal_id foreign key (hecho_sucursal_id)
+    references sucursal (sucursal_id),
+  constraint pk_transaccion primary key (tra_id)
+ ) ENGINE=InnoDB;
+
+/* fin creacion de tablas */
+
+/* inicio de llenado de datos */
+
+/* departamento data */
+insert into departamento (dept_id, nombre)
+values (null, 'Operaciones');
+insert into departamento (dept_id, nombre)
+values (null, 'Prestamos');
+insert into departamento (dept_id, nombre)
+values (null, 'Administracion');
+
+/* datos de sucursal */
+insert into sucursal (sucursal_id, nombre, direccion, ciudad, estado, codpostal)
+values (null, 'Principal', '3882 Calle Principal.', 'San Cristobal', 'TA', '02451');
+insert into sucursal (sucursal_id, nombre, direccion, ciudad, estado, codpostal)
+values (null, 'Sucursal Merida', '422 Calle 25.', 'Merida', 'ME', '01801');
+insert into sucursal (sucursal_id, nombre, direccion, ciudad, estado, codpostal)
+values (null, 'Sucursal Barinas', '125 Calle Presidencial', 'Barinas', 'BA', '02169');
+insert into sucursal (sucursal_id, nombre, direccion, ciudad, estado, codpostal)
+values (null, 'Sucursal Trujillo', '378 Calle Bocono.', 'Valera', 'TR', '03079');
+
+/* datos de empleados */
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Miguel', 'Suarez', '2001-06-22', 
+  (select dept_id from departamento where nombre = 'Administracion'), 
+  'Presidente', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Susana', 'Barrios', '2002-09-12', 
+  (select dept_id from departamento where nombre = 'Administracion'), 
+  'Vice Presidente', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Roberto', 'Diaz', '2000-02-09',
+  (select dept_id from departamento where nombre = 'Administracion'), 
+  'Tesorero', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Susana', 'Hernandez', '2002-04-24', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Jefe Operaciones', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'John', 'Bueno', '2003-11-14', 
+  (select dept_id from departamento where nombre = 'Prestamos'), 
+  'Jefe Prestamos', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Helena', 'Fernandez', '2004-03-17', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero Principal', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Christian', 'Torres', '2004-09-15', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Sara', 'Parra', '2002-12-02', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Juana', 'Garcia', '2002-05-03', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Principal'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Paula', 'Rodriguez', '2002-07-27', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero Principal', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Barinas'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Tomas', 'Zambrano', '2000-10-23', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Barinas'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Samanta', 'Jimenez', '2003-01-08', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Barinas'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Juan', 'Barrientos', '2000-05-11', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero Principal', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Merida'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Cecilia', 'Mason', '2002-08-09', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Merida'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Frank', 'Puerto', '2003-04-01', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Merida'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Teresa', 'Marquez', '2001-03-15', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero Principal', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Trujillo'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Betty', 'Flores', '2002-06-29', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Trujillo'));
+insert into empleado (emp_id, nombre, apellido, fecha_inicio, 
+  dept_id, titulo, asignado_sucursal_id)
+values (null, 'Ricardo', 'Torres', '2002-12-12', 
+  (select dept_id from departamento where nombre = 'Operaciones'), 
+  'Cajero', 
+  (select sucursal_id from sucursal where nombre = 'Sucursal Trujillo'));
+
+/* crear datos de autoreferencia para la clave foránea 'jefe_emp_id' */
+create temporary table emp_tmp as
+select emp_id, nombre, apellido from empleado;
+
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Suarez' and nombre = 'Miguel')
+where ((apellido = 'Barrios' and nombre = 'Susana')
+  or (apellido = 'Diaz' and nombre = 'Roberto'));
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Diaz' and nombre = 'Roberto')
+where apellido = 'Hernandez' and nombre = 'Susana';
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Hernandez' and nombre = 'Susana')
+where ((apellido = 'Bueno' and nombre = 'John')
+  or (apellido = 'Fernandez' and nombre = 'Helena')
+  or (apellido = 'Rodriguez' and nombre = 'Paula') 
+  or (apellido = 'Barrientos' and nombre = 'Juan') 
+  or (apellido = 'Marquez' and nombre = 'Teresa')); 
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Fernandez' and nombre = 'Helena')
+where ((apellido = 'Torres' and nombre = 'Christian') 
+  or (apellido = 'Parra' and nombre = 'Sara') 
+  or (apellido = 'Garcia' and nombre = 'Juana'));  
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Rodriguez' and nombre = 'Paula')
+where ((apellido = 'Zambrano' and nombre = 'Tomas')  
+  or (apellido = 'Jimenez' and nombre = 'Samanta'));   
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Barrientos' and nombre = 'Juan')
+where ((apellido = 'Mason' and nombre = 'Cecilia')   
+  or (apellido = 'Puerto' and nombre = 'Frank'));    
+update empleado set jefe_emp_id =
+ (select emp_id from emp_tmp where apellido = 'Marquez' and nombre = 'Teresa')
+where ((apellido = 'Flores' and nombre = 'Betty')   
+  or (apellido = 'Torres' and nombre = 'Ricardo'));    
+
+drop table emp_tmp;
+
+/* datos tipo_producto */
+insert into tipo_producto (tipo_producto_cd, nombre)
+values ('cuenta','Cuentas');
+insert into tipo_producto (tipo_producto_cd, nombre)
+values ('prestamo','Prestamos natural y juridica');
+insert into tipo_producto (tipo_producto_cd, nombre)
+values ('seguro','Oferta de Seguros');
+
+/* datos de productos */
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('CCO','Cuenta Corriente','cuenta','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('CAH','Cuenta Ahorro','cuenta','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('CMM','Cuenta de Mercado Monetario','cuenta','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('CDD','Certificado de Deposito','cuenta','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('HIP','Hipoteca','prestamo','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('AUT','Auto Prestamo','prestamo','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('LCJ','Linea de Credito Juridica','prestamo','2000-01-01');
+insert into producto (producto_cd, nombre, tipo_producto_cd, fecha_inicio)
+values ('MIC','Microcredito','prestamo','2000-01-01');
+
+/* datos de clientes naturales */
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '111-11-1111', 'N', 'Calle 8 Nro 10-65', 'Tariba', 'TA', '01940');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Jaime', 'Hernandez', '1972-04-22' from cliente
+where region_id = '111-11-1111';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '222-22-2222', 'N', 'Carrera 20 nro 20-62', 'San Cristobal', 'TA', '01801');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Susana', 'Torres', '1968-08-15' from cliente
+where region_id = '222-22-2222';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '333-33-3333', 'N', 'Pasaje Libertad Nro 1-15', 'Bailadores', 'ME', '02169');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Franklin', 'Perez', '1958-02-06' from cliente
+where region_id = '333-33-3333';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '444-44-4444', 'N', 'Calle 6 vereda 3 nro 6-3', 'Barinitas', 'BA', '02451');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'John', 'Montoya', '1966-12-22' from cliente
+where region_id = '444-44-4444';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '555-55-5555', 'N', 'Calle principal nro 18', 'Valera', 'TR', '03079');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Charles', 'Mendez', '1971-08-25' from cliente
+where region_id = '555-55-5555';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '666-66-6666', 'N', 'Urb. Bella vista casa 16', 'Barinitas', 'BA', '02451');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'John', 'Martinez', '1962-09-14' from cliente
+where region_id = '666-66-6666';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '777-77-7777', 'N', 'Av 8 calle 2 nro 5-12', 'Palmira', 'TA', '01887');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Margarita', 'Fernandez', '1947-03-19' from cliente
+where region_id = '777-77-7777';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '888-88-8888', 'N', 'Av Libertador nro 530', 'Valera', 'TR', '03079');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Luisa', 'Becerra', '1977-07-01' from cliente
+where region_id = '888-88-8888';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '999-99-9999', 'N', 'Calle Araguaney nro 18', 'Barinas', 'BA', '02458');
+insert into pnatural (cli_id, nombre, apellido, fec_nac)
+select cli_id, 'Richard', 'Farias', '1968-06-16' from cliente
+where region_id = '999-99-9999';
+
+/* datos de clientes juridicos */
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '04-1111111', 'J', 'Galpon 7 Zona industrial', 'Valera', 'TR', '03079');
+insert into juridica (cli_id, nombre, estado_id, fec_ingreso)
+select cli_id, 'Ingenieria & Asociados', '12-345-678', '1995-05-01' from cliente
+where region_id = '04-1111111';
+insert into representante (representante_id, cli_id, nombre, apellido,
+  titulo, fecha_inicio)
+select null, cli_id, 'Juan', 'Chacin', 'Presidente', '1995-05-01'
+from cliente
+where region_id = '04-1111111';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '04-2222222', 'J', 'Avenida 287 B-25', 'Palmira', 'TA', '01887');
+insert into juridica (cli_id, nombre, estado_id, fec_ingreso)
+select cli_id, 'Refrigeración El Polo C.A.', '23-456-789', '2001-01-01' from cliente
+where region_id = '04-2222222';
+insert into representante (representante_id, cli_id, nombre, apellido,
+  titulo, fecha_inicio)
+select null, cli_id, 'Pablo', 'Lopez', 'Presidente', '2001-01-01'
+from cliente
+where region_id = '04-2222222';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '04-3333333', 'J', '789 Calle Principal', 'Valera', 'TR', '03079');
+insert into juridica (cli_id, nombre, estado_id, fec_ingreso)
+select cli_id, 'Auto Partes El Jefe', '34-567-890', '2002-06-30' from cliente
+where region_id = '04-3333333';
+insert into representante (representante_id, cli_id, nombre, apellido,
+  titulo, fecha_inicio)
+select null, cli_id, 'Carlos', 'Luna', 'Presidente', '2002-06-30'
+from cliente
+where region_id = '04-3333333';
+insert into cliente (cli_id, region_id, tipo_cliente,
+  direccion, ciudad, estado, codigo_postal)
+values (null, '04-4444444', 'J', '4772 via panamericana', 'Bailadores', 'ME', '02169');
+insert into juridica (cli_id, nombre, estado_id, fec_ingreso)
+select cli_id, 'AAA Seguros C.A.', '45-678-901', '1999-05-01' from cliente
+where region_id = '04-4444444';
+insert into representante (representante_id, cli_id, nombre, apellido,
+  titulo, fecha_inicio)
+select null, cli_id, 'Simon', 'Moreno', 'Presidente', '1999-05-01'
+from cliente
+where region_id = '04-4444444';
+
+/* datos de cuentas naturales */
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'San Cristobal' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2000-01-15' fec_apertura, '2005-01-04' last_date,
+    1057.75 avail, 1057.75 pend union all
+  select 'CAH' prod_cd, '2000-01-15' fec_apertura, '2004-12-19' last_date,
+    500.00 avail, 500.00 pend union all
+  select 'CDD' prod_cd, '2004-06-30' fec_apertura, '2004-06-30' last_date,
+    3000.00 avail, 3000.00 pend) a
+where c.region_id = '111-11-1111';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'San Cristobal' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2001-03-12' fec_apertura, '2004-12-27' last_date,
+    2258.02 avail, 2258.02 pend union all
+  select 'CAH' prod_cd, '2001-03-12' fec_apertura, '2004-12-11' last_date,
+    200.00 avail, 200.00 pend) a
+where c.region_id = '222-22-2222';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Merida' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2002-11-23' fec_apertura, '2004-11-30' last_date,
+    1057.75 avail, 1057.75 pend union all
+  select 'CMM' prod_cd, '2002-12-15' fec_apertura, '2004-12-05' last_date,
+    2212.50 avail, 2212.50 pend) a
+where c.region_id = '333-33-3333';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Barinas' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2003-09-12' fec_apertura, '2005-01-03' last_date,
+    534.12 avail, 534.12 pend union all
+  select 'CAH' prod_cd, '2000-01-15' fec_apertura, '2004-10-24' last_date,
+    767.77 avail, 767.77 pend union all
+  select 'CMM' prod_cd, '2004-09-30' fec_apertura, '2004-11-11' last_date,
+    5487.09 avail, 5487.09 pend) a
+where c.region_id = '444-44-4444';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Valera' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2004-01-27' fec_apertura, '2005-01-05' last_date,
+    2237.97 avail, 2897.97 pend) a
+where c.region_id = '555-55-5555';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Barinas' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2002-08-24' fec_apertura, '2004-11-29' last_date,
+    122.37 avail, 122.37 pend union all
+  select 'CDD' prod_cd, '2004-12-28' fec_apertura, '2004-12-28' last_date,
+    10000.00 avail, 10000.00 pend) a
+where c.region_id = '666-66-6666';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'San Cristobal' limit 1) e
+  cross join
+ (select 'CDD' prod_cd, '2004-01-12' fec_apertura, '2004-01-12' last_date,
+    5000.00 avail, 5000.00 pend) a
+where c.region_id = '777-77-7777';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Valera' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2001-05-23' fec_apertura, '2005-01-03' last_date,
+    3487.19 avail, 3487.19 pend union all
+  select 'CAH' prod_cd, '2001-05-23' fec_apertura, '2004-10-12' last_date,
+    387.99 avail, 387.99 pend) a
+where c.region_id = '888-88-8888';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Barinas' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2003-07-30' fec_apertura, '2004-12-15' last_date,
+    125.67 avail, 125.67 pend union all
+  select 'CMM' prod_cd, '2004-10-28' fec_apertura, '2004-10-28' last_date,
+    9345.55 avail, 9845.55 pend union all
+  select 'CDD' prod_cd, '2004-06-30' fec_apertura, '2004-06-30' last_date,
+    1500.00 avail, 1500.00 pend) a
+where c.region_id = '999-99-9999';
+
+/* datos de cuentas juridicas */
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Valera' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2002-09-30' fec_apertura, '2004-12-15' last_date,
+    23575.12 avail, 23575.12 pend union all
+  select 'LCJ' prod_cd, '2002-10-01' fec_apertura, '2004-08-28' last_date,
+    0 avail, 0 pend) a
+where c.region_id = '04-1111111';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'San Cristobal' limit 1) e
+  cross join
+ (select 'LCJ' prod_cd, '2004-03-22' fec_apertura, '2004-11-14' last_date,
+    9345.55 avail, 9345.55 pend) a
+where c.region_id = '04-2222222';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Valera' limit 1) e
+  cross join
+ (select 'CCO' prod_cd, '2003-07-30' fec_apertura, '2004-12-15' last_date,
+    38552.05 avail, 38552.05 pend) a
+where c.region_id = '04-3333333';
+insert into cuenta (cuenta_id, producto_cd, cli_id, fec_apertura,
+  fec_ult_tra, estado, cta_sucursal_id,
+  cta_emp_id, saldo_disponible, saldo_diferido)
+select null, a.prod_cd, c.cli_id, a.fec_apertura, a.last_date, 'ACTIVO',
+  e.sucursal_id, e.emp_id, a.avail, a.pend
+from cliente c cross join 
+ (select b.sucursal_id, e.emp_id 
+  from sucursal b inner join empleado e on e.asignado_sucursal_id = b.sucursal_id
+  where b.ciudad = 'Merida' limit 1) e
+  cross join
+ (select 'MIC' prod_cd, '2004-02-22' fec_apertura, '2004-12-17' last_date,
+    50000.00 avail, 50000.00 pend) a
+where c.region_id = '04-4444444';
+
+/* colocar 100 Bs en todas las cuentas y colocar la fecha de apertura de las cuentas */
+insert into transaccion (tra_id, fec_tra, cuenta_id, tipo_tra,
+  monto, fec_dis_fondo)
+select null, a.fec_apertura, a.cuenta_id, 'CDT', 100, a.fec_apertura
+from cuenta a
+where a.producto_cd IN ('CCO','CAH','CDD','CMM');
+
+/* end data population */
+
